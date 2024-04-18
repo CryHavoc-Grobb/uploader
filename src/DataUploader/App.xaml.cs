@@ -17,5 +17,10 @@ public partial class App : PrismApplication
     {
         return Container.Resolve<MainWindow>();
     }
+
+    protected override void OnExit(ExitEventArgs e)
+    {
+        FileMonitorContainer.Instance.Dispose();
+    }
 }
 

@@ -2,6 +2,7 @@
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using DateTimeOffset = ABI.System.DateTimeOffset;
 
 namespace DataUploader;
 
@@ -15,6 +16,12 @@ internal sealed class UserSettings
 
     [JsonPropertyName("startWithWindows")] 
     public bool StartWithWindows { get; set; }
+
+    [JsonPropertyName("pollIntervalSeconds")]
+    public int PollingIntervalSeconds { get; set; } = 1800;
+
+    [JsonPropertyName("watchFiles")]
+    public List<WatchFile> WatchFiles { get; set; } = [];
 }
 
 internal static class UserSettingsManager

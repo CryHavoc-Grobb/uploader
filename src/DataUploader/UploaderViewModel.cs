@@ -1,16 +1,16 @@
 ﻿using System.IO;
 using Microsoft.Extensions.FileSystemGlobbing;
 using Microsoft.Extensions.FileSystemGlobbing.Abstractions;
-using Microsoft.Toolkit.Uwp.Notifications;
 using Prism.Mvvm;
-using Refit;
+using Quartz;
+using Quartz.Impl;
 
 namespace DataUploader;
 
 public class UploaderViewModel : BindableBase, IDisposable
 {
     private string _wowFolderPath = string.Empty;
-    private bool _initialized;
+    private readonly bool _initialized;
 
     private bool _canRun;
 
@@ -26,7 +26,7 @@ public class UploaderViewModel : BindableBase, IDisposable
         set
         {
             SetProperty(ref _wowFolderPath, value);
-            OnPathChanged();
+            SaveSettings();
         }
     }
 
@@ -53,13 +53,22 @@ public class UploaderViewModel : BindableBase, IDisposable
         }
     }
 
-    private readonly FileMonitorService? _fileMonitorService = new();
+    private string _lastUpdatedText = "Last update: Hasn't run yet!";
+
+    public string LastUpdatedText
+    {
+        get => _lastUpdatedText;
+        set => SetProperty(ref _lastUpdatedText, value);
+    }
+
     private UserSettings _settings = default!;
+    private readonly IScheduler _scheduler = default!;
 
     public UploaderViewModel()
     {
         LoadSettings();
         AutoDetectBaseFolder();
+        FileMonitorContainer.Initialize(WowFolderPath);
         
         var matcher = new Matcher();
         matcher.AddInclude("**/CryHavocBank.lua");
@@ -73,8 +82,26 @@ public class UploaderViewModel : BindableBase, IDisposable
         // at this point we should have files to watch and an api key
         CanRun = Environment.GetEnvironmentVariable("CH_API_KEY") is not null;
         
-        _fileMonitorService!.BankDataUpdated += FileUpdatedHandler;
-        StartFileWatcher();
+        _scheduler = StdSchedulerFactory.GetDefaultScheduler().Result;
+        _scheduler.Start().Wait();
+        
+        var job = JobBuilder.Create<CheckFileJob>()
+            .WithIdentity("PollFileJob")
+            .Build();
+
+        var trigger = TriggerBuilder.Create()
+            .WithIdentity("PollFileJobTrigger")
+            .StartNow()
+            .WithSimpleSchedule(s => s
+                .WithIntervalInSeconds(_settings.PollingIntervalSeconds)
+                .RepeatForever())
+            .Build();
+
+        UpdateObserver.GbankUpdated += (_, args) 
+            => LastUpdatedText = $"Last update: {args.LastUpdated:MM/dd/yyyy hh\\:mm tt}";
+
+        _ = _scheduler.ScheduleJob(job, trigger).Result;
+        
         _initialized = true;
     }
 
@@ -84,12 +111,6 @@ public class UploaderViewModel : BindableBase, IDisposable
         WowFolderPath = _settings.GameRoot ?? string.Empty;
         NotifyOnUpload = _settings.NotifyOnUpload;
         StartWithWindows = _settings.StartWithWindows;
-    }
-
-    private void OnPathChanged()
-    {
-        SaveSettings();   
-        StartFileWatcher();
     }
 
     private void SaveSettings()
@@ -102,33 +123,11 @@ public class UploaderViewModel : BindableBase, IDisposable
         _settings.NotifyOnUpload = NotifyOnUpload;
         UserSettingsManager.SaveSettings(_settings);
     }
-    
-    private void StartFileWatcher()
-    {
-        if (!CanRun)
-            return;
-        
-        _fileMonitorService!.StartFileWatcher(WowFolderPath);
-    }
 
     private void OnStartWithWindowsChanged(bool startWithWindows)
     {
         SetRunAtStartup.RunAtStartup(startWithWindows);
         SaveSettings();
-    }
-
-    private async void FileUpdatedHandler(object? sender, BankDataUpdatedEventArgs e)
-    {
-        var request = new UpdateGuildBankRequest { Items = e.Items.ToList() };
-        var client = RestService.For<IGuildApi>("https://guild-api-production.up.railway.app");
-        await client.UpdateGuildBankAsync(
-            request, 
-            Environment.GetEnvironmentVariable("CH_API_KEY")!);
-        
-        Console.WriteLine("Updated guild bank!");
-        
-        if(NotifyOnUpload)
-            Notify();
     }
 
     private void AutoDetectBaseFolder()
@@ -142,16 +141,6 @@ public class UploaderViewModel : BindableBase, IDisposable
         WowFolderPath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
     }
     
-    private static void Notify()
-    {
-        new ToastContentBuilder()
-            .AddArgument("action", "viewConversation")
-            .AddArgument("conversationId", 9813)
-            .AddText("Guild bank updated!")
-            .AddText("The guild bank has been updated with your latest data pulled from the addon.")            
-            .Show();
-    }
-    
     public void Dispose()
     {
         Disposing(true);
@@ -162,7 +151,8 @@ public class UploaderViewModel : BindableBase, IDisposable
     {
         if (!disposing)
             return;
-        
-        _fileMonitorService?.Dispose();
+
+        _scheduler.Shutdown().Wait();
+        FileMonitorContainer.Instance.Dispose();
     }
 }

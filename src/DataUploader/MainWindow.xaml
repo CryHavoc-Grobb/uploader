@@ -7,7 +7,7 @@
         xmlns:vm="clr-namespace:DataUploader"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance Type=vm:UploaderViewModel, IsDesignTimeCreatable=True}"
-        Background="#242222" Height="145" Width="300" WindowStyle="SingleBorderWindow"
+        Background="#242222" Height="170" Width="300" WindowStyle="SingleBorderWindow"
         Title="Bank Data Uploader" ResizeMode="NoResize">
     <StackPanel>
         
@@ -32,6 +32,13 @@
                       Foreground="Aquamarine"
                       Margin="6" 
             />
+            
+            <Label Content="{Binding LastUpdatedText, Mode=TwoWay}"
+                   Foreground="White"
+                   FontStyle="Italic"
+                   Margin="0 6"
+            />
+            
         </StackPanel>
         
     </StackPanel>
