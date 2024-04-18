@@ -8,7 +8,7 @@
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance Type=vm:UploaderViewModel, IsDesignTimeCreatable=True}"
         Background="#242222" Height="170" Width="300" WindowStyle="SingleBorderWindow"
-        Title="Bank Data Uploader" ResizeMode="NoResize">
+        Title="Cry Havoc Bank Uploader" ResizeMode="NoResize">
     <StackPanel>
         
         <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">

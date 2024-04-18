@@ -1,6 +1,6 @@
 ﻿using System.Windows;
 using System.Windows.Controls;
-using Microsoft.WindowsAPICodePack.Dialogs;
+using Microsoft.Win32;
 
 namespace DataUploader;
 
@@ -25,12 +25,15 @@ public partial class FolderPicker : UserControl
 
     private void BrowseButton_Click(object sender, RoutedEventArgs e)
     {
-        using var dialog = new CommonOpenFileDialog();
-        dialog.IsFolderPicker = true;
-        dialog.InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
-        if (dialog.ShowDialog() == CommonFileDialogResult.Ok)
+        var dialog = new OpenFolderDialog
         {
-            FolderPath = dialog.FileName;
+            Title = "Choose WoW base directory",
+            InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86)
+        };
+
+        if (dialog.ShowDialog() == true)
+        {
+            FolderPath = dialog.FolderName;
         }
     }
 }

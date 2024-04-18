@@ -21,7 +21,7 @@
       <PackageReference Include="Prism.Unity" Version="8.1.97" />
       <PackageReference Include="Quartz" Version="3.8.1" />
       <PackageReference Include="Refit" Version="7.0.0" />
-      <PackageReference Include="WindowsAPICodePack-Shell" Version="1.1.1" />
+      
     </ItemGroup>
 
     <ItemGroup>
