@@ -2,6 +2,8 @@
 
 Monitors CryHavocBank.lua saved variables field and uploads to the guild API.
 
+![screenshot](screenshot.png)
+
 ## Prerequisites
 
 You must have the addon installed which will dump the bank data to a file when you open it. If you do not have permissions to view all tabs, your data might be incomplete.
@@ -25,3 +27,9 @@ Obtain API key an set in your local environment:
 ```
 
 Run the exe file. You can choose to have the application start with windows so that you don't have to remember.
+
+## Other Notes
+
+- Config file is stored at `%LOCALAPPDATA%\GbankUploader\user_settings.json`
+- When the gbank is opened in-game, it will dump the file to memory but it won't be written to the file until you /reload or exit, so the uploader won't detect it right away.
+- Once the data is uploaded, the gbank will be searchable in discord using `/gbank <item name>`
